@@ -71,6 +71,21 @@ namespace Project
             return new List<HttpResponseMessage>(taskResults);
         }
 
+        static List<List<string>> CreateUrlBlocks(List<string> urls, int blockSize)
+        {
+            var totalBlocks = decimal.Round(decimal.Divide(urls.Count, blockSize), MidpointRounding.ToPositiveInfinity);
+            var blocks = new List<List<string>>();
+
+            for (var block = 0; block < totalBlocks; block++)
+            {
+                var currentBlockSize = urls.Count > (block + 1) * blockSize ? blockSize : urls.Count % blockSize;
+                var blockUrls = urls.GetRange(block * blockSize, currentBlockSize);
+                blocks.Add(blockUrls);
+            }
+
+            return blocks;
+        }
+
         static async Task<IList<HttpResponseMessage>> ProcessTwoWeekParallelInLoopWithBlocks(HttpClient client)
         {
             var urls = new List<string>();
@@ -82,14 +97,10 @@ namespace Project
                 urls.Add($"http://localhost:7000/{date}");
             }
 
-            var blockSize = 10;
-            var totalBlocks = decimal.Round(decimal.Divide(daysToLoad, blockSize), MidpointRounding.ToPositiveInfinity);
+            var blocks = CreateUrlBlocks(urls, 10);
 
             var allResults = new List<HttpResponseMessage>();
-            for (var block = 0; block < totalBlocks; block++)
-            {
-                var currentBlockSize = urls.Count > (block + 1) * blockSize ? blockSize : urls.Count % blockSize;
-                var blockUrls = urls.GetRange(block * blockSize, currentBlockSize);
+            foreach(var blockUrls in blocks) {
                 var tasks = new List<Task<HttpResponseMessage>>();
                 foreach (var blockUrl in blockUrls)
                 {
@@ -138,7 +149,7 @@ namespace Project
                 Console.WriteLine(result);
             }
             Console.WriteLine();
-            Console.WriteLine($"Took {watch.ElapsedMilliseconds} milliseconds to execute with {results.Count} results. Average time is {watch.ElapsedMilliseconds / (decimal) results.Count }. Success {successful} Failures {failures}.");
+            Console.WriteLine($"Took {watch.ElapsedMilliseconds / 1000d} seconds to execute with {results.Count} results. Average time is {watch.ElapsedMilliseconds / (decimal) results.Count }. Success {successful} Failures {failures}.");
         }
     }
 }
