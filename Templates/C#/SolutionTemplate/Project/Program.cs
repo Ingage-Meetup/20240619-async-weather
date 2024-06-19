@@ -183,7 +183,7 @@ namespace Project
                 return taskResults.ToList();
             }
 
-            var delay = TimeSpan.FromSeconds(Math.Pow(retries, 2));
+            var delay = TimeSpan.FromSeconds(Math.Pow(2, retries));
             Console.WriteLine($"Delaying for {delay.TotalSeconds} seconds before retrying");
             await Task.Delay(delay);
 
