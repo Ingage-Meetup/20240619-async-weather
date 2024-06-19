@@ -245,6 +245,7 @@ namespace Project
         {
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("api-key", "charlie");
+            client.DefaultRequestHeaders.Add("random-errors", "true");
 
             var watch = new Stopwatch();
             watch.Start();
