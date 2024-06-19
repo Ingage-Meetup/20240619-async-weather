@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -8,85 +9,85 @@ namespace Project
 {
     class Program
     {
+        public const string BaseUrl = "http://localhost:7000";
 
-        static async Task<IList<HttpResponseMessage>> ProcessOneDay(HttpClient client)
+        public static async Task<IList<HttpResponseMessage>> ProcessOneDayAsync(HttpClient client)
         {
-            var result = await client.GetAsync("http://localhost:7000/2020-01-01");
+            var result = await client.GetAsync($"{BaseUrl}/2020-01-01");
             return new List<HttpResponseMessage>() {result};
         }
 
-        static async Task<IList<HttpResponseMessage>> ProcessOneWeekSerial(HttpClient client)
+        public static async Task<IList<HttpResponseMessage>> ProcessOneWeekSerialAsync(HttpClient client)
         {
-            var result1 = await client.GetAsync("http://localhost:7000/2020-01-01");
-            var result2 = await client.GetAsync("http://localhost:7000/2020-01-02");
-            var result3 = await client.GetAsync("http://localhost:7000/2020-01-03");
-            var result4 = await client.GetAsync("http://localhost:7000/2020-01-04");
-            var result5 = await client.GetAsync("http://localhost:7000/2020-01-05");
-            var result6 = await client.GetAsync("http://localhost:7000/2020-01-06");
-            var result7 = await client.GetAsync("http://localhost:7000/2020-01-07");
+            var result1 = await client.GetAsync($"{BaseUrl}/2020-01-01");
+            var result2 = await client.GetAsync($"{BaseUrl}/2020-01-02");
+            var result3 = await client.GetAsync($"{BaseUrl}/2020-01-03");
+            var result4 = await client.GetAsync($"{BaseUrl}/2020-01-04");
+            var result5 = await client.GetAsync($"{BaseUrl}/2020-01-05");
+            var result6 = await client.GetAsync($"{BaseUrl}/2020-01-06");
+            var result7 = await client.GetAsync($"{BaseUrl}/2020-01-07");
 
             return new List<HttpResponseMessage>() {result1, result2, result3, result4, result5, result6, result7};
         }
 
-        static async Task<IList<HttpResponseMessage>> ProcessOneWeekParallel(HttpClient client)
+        public static async Task<IList<HttpResponseMessage>> ProcessOneWeekParallelAsync(HttpClient client)
         {
-            var result1 = client.GetAsync("http://localhost:7000/2020-01-01");
-            var result2 = client.GetAsync("http://localhost:7000/2020-01-02");
-            var result3 = client.GetAsync("http://localhost:7000/2020-01-03");
-            var result4 = client.GetAsync("http://localhost:7000/2020-01-04");
-            var result5 = client.GetAsync("http://localhost:7000/2020-01-05");
-            var result6 = client.GetAsync("http://localhost:7000/2020-01-06");
-            var result7 = client.GetAsync("http://localhost:7000/2020-01-07");
+            var result1 = client.GetAsync($"{BaseUrl}/2020-01-01");
+            var result2 = client.GetAsync($"{BaseUrl}/2020-01-02");
+            var result3 = client.GetAsync($"{BaseUrl}/2020-01-03");
+            var result4 = client.GetAsync($"{BaseUrl}/2020-01-04");
+            var result5 = client.GetAsync($"{BaseUrl}/2020-01-05");
+            var result6 = client.GetAsync($"{BaseUrl}/2020-01-06");
+            var result7 = client.GetAsync($"{BaseUrl}/2020-01-07");
             
             Task.WaitAll(result1, result2, result3, result4, result5, result6, result7);
 
             return new List<HttpResponseMessage>() { result1.Result, result2.Result, result3.Result, result4.Result, result5.Result, result6.Result, result7.Result };
         }
 
-        static async Task<IList<HttpResponseMessage>> ProcessOneWeekParallelInLoop(HttpClient client)
+        public static async Task<IList<HttpResponseMessage>> ProcessOneWeekParallelInLoopAsync(HttpClient client)
         {
             var tasks = new List<Task<HttpResponseMessage>>();
             var startDate = new DateTime(2020, 01, 01);
             for (var i = 0; i < 7; i++)
             {
                 var date = startDate.AddDays(i).ToString("yyyy-MM-dd");
-                tasks.Add(client.GetAsync($"http://localhost:7000/{date}"));
+                tasks.Add(client.GetAsync($"{BaseUrl}/{date}"));
             }
 
             var taskResults = await Task.WhenAll(tasks);
             return new List<HttpResponseMessage>(taskResults);
         }
 
-        static async Task<IList<HttpResponseMessage>> ProcessTwoWeekParallelInLoopWithoutBlocks(HttpClient client)
+        public static async Task<IList<HttpResponseMessage>> ProcessTwoWeekParallelInLoopWithoutBlocksAsync(HttpClient client)
         {
             var tasks = new List<Task<HttpResponseMessage>>();
             var startDate = new DateTime(2020, 01, 01);
             for (var index = 0; index < 14; index++)
             {
                 var date = startDate.AddDays(index).ToString("yyyy-MM-dd");
-                tasks.Add(client.GetAsync($"http://localhost:7000/{date}"));
+                tasks.Add(client.GetAsync($"{BaseUrl}/{date}"));
             }
 
             var taskResults = await Task.WhenAll(tasks);
             return new List<HttpResponseMessage>(taskResults);
         }
 
-        static List<List<string>> CreateUrlBlocks(List<string> urls, int blockSize)
+        public static List<List<string>> CreateUrlBlocks(List<string> urls, int blockSize)
         {
             var totalBlocks = decimal.Round(decimal.Divide(urls.Count, blockSize), MidpointRounding.ToPositiveInfinity);
             var blocks = new List<List<string>>();
 
-            for (var block = 0; block < totalBlocks; block++)
+            for (var index = 0; index < totalBlocks; index++)
             {
-                var currentBlockSize = urls.Count > (block + 1) * blockSize ? blockSize : urls.Count % blockSize;
-                var blockUrls = urls.GetRange(block * blockSize, currentBlockSize);
+                var blockUrls = urls.Skip(index * blockSize).Take(blockSize).ToList();
                 blocks.Add(blockUrls);
             }
 
             return blocks;
         }
 
-        static async Task<IList<HttpResponseMessage>> ProcessTwoWeekParallelInLoopWithBlocks(HttpClient client)
+        public static async Task<IList<HttpResponseMessage>> ProcessTwoWeekParallelInLoopWithBlocksAsync(HttpClient client)
         {
             var urls = new List<string>();
             var startDate = new DateTime(2020, 01, 01);
@@ -94,7 +95,7 @@ namespace Project
             for (var index = 0; index < daysToLoad; index++) 
             {
                 var date = startDate.AddDays(index).ToString("yyyy-MM-dd");
-                urls.Add($"http://localhost:7000/{date}");
+                urls.Add($"{BaseUrl}/{date}");
             }
 
             var blocks = CreateUrlBlocks(urls, 10);
@@ -114,8 +115,43 @@ namespace Project
             return allResults;
         }
 
+        public static async Task<IList<HttpResponseMessage>> ProcessParallelWithBlocksAsync(HttpClient client, DateTime startDate, int daysToLoad)
+        {
+            var urls = new List<string>();
+            for (var index = 0; index < daysToLoad; index++)
+            {
+                var date = startDate.AddDays(index).ToString("yyyy-MM-dd");
+                urls.Add($"{BaseUrl}/{date}");
+            }
 
-        static async Task Main(string[] args)
+            var blocks = CreateUrlBlocks(urls, 10);
+
+            var allResults = new List<HttpResponseMessage>();
+            foreach (var blockUrls in blocks)
+            {
+                var watch = new Stopwatch();
+                watch.Start();
+
+                var tasks = new List<Task<HttpResponseMessage>>();
+                foreach (var blockUrl in blockUrls)
+                {
+                    tasks.Add(client.GetAsync(blockUrl));
+                }
+
+                var taskResults = await Task.WhenAll(tasks);
+                allResults.AddRange(taskResults);
+
+                watch.Stop();
+                var successful = taskResults.Count(x => x.IsSuccessStatusCode);
+                var failures  = taskResults.Count(x => !x.IsSuccessStatusCode);
+                Console.WriteLine($"Took {watch.ElapsedMilliseconds / 1000d} seconds to execute with {taskResults.Count()} results. Average time is {watch.ElapsedMilliseconds / (taskResults.Count() * 1000d) }. Success {successful} Failures {failures}.");
+            }
+
+            return allResults;
+        }
+
+
+        public static async Task Main(string[] args)
         {
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("api-key", "charlie");
@@ -123,13 +159,15 @@ namespace Project
             var watch = new Stopwatch();
             watch.Start();
 
-            //var results = await ProcessOneDay(client);
-            //var results = await ProcessOneWeekSerial(client);
-            //var results = await ProcessOneWeekParallel(client);
-            //var results = await ProcessOneWeekParallelInLoop(client);
-            //var results = await ProcessTwoWeekParallelInLoopWithoutBlocks(client);
-            var results = await ProcessTwoWeekParallelInLoopWithBlocks(client);
-            
+            //var results = await ProcessOneDayAsync(client);
+            //var results = await ProcessOneWeekSerialAsync(client);
+            //var results = await ProcessOneWeekParallelAsync(client);
+            //var results = await ProcessOneWeekParallelInLoopAsync(client);
+            //var results = await ProcessTwoWeekParallelInLoopWithoutBlocksAsync(client);
+            //var results = await ProcessTwoWeekParallelInLoopWithBlocksAsync(client);
+            var results = await ProcessParallelWithBlocksAsync(client, new DateTime(2020, 01, 01), 21);
+            //var results = await ProcessParallelWithBlocksAsync(client, new DateTime(2023, 01, 01), 365);
+
 
             watch.Stop();
 
@@ -146,10 +184,11 @@ namespace Project
                     failures += 1;
                 }
 
-                Console.WriteLine(result);
+                var body = await result.Content.ReadAsStringAsync();
+                Console.WriteLine($"Status Code: {result.StatusCode} Content: {body}");
             }
             Console.WriteLine();
-            Console.WriteLine($"Took {watch.ElapsedMilliseconds / 1000d} seconds to execute with {results.Count} results. Average time is {watch.ElapsedMilliseconds / (decimal) results.Count }. Success {successful} Failures {failures}.");
+            Console.WriteLine($"Took {watch.ElapsedMilliseconds / 1000d} seconds to execute with {results.Count} results. Average time is {watch.ElapsedMilliseconds / (results.Count * 1000d) }. Success {successful} Failures {failures}.");
         }
     }
 }
